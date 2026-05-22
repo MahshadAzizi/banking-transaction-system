@@ -1,0 +1,12 @@
+[project]
+name = "banking-transaction-system"
+version = "0.1.0"
+description = "Banking Transaction Processing System — DDD + Hexagonal Architecture"
+authors = ["Mahshad Azizi <Azizi.mhshd@gmail.com>"]
+readme = "README.md"
+
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+]
