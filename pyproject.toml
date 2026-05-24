@@ -7,6 +7,21 @@ readme = "README.md"
 
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi",
-    "uvicorn",
+    # Web framework
+    "fastapi==0.121.0",
+    "uvicorn[standard]==0.38.0",
+
+    # Validation & settings
+    "pydantic==2.12.4",
+    "pydantic-settings==2.11.0",
+
+    # Database
+    "sqlalchemy[asyncio]==2.0.44",
+    "asyncpg==0.30.0",
+
+    # Dependency injection
+    "dependency-injector==4.48.2",
+
+    # Logging
+    "structlog==24.1.0",
 ]
