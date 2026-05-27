@@ -20,6 +20,7 @@ class TransactionInitiated(DomainEvent):
 
     Consumers: fraud detection, rate limiter, audit log, notification service.
     """
+
     transaction_id: UUID = field(default_factory=uuid4)
     from_account_id: UUID = field(default_factory=uuid4)
     to_account_id: UUID = field(default_factory=uuid4)
@@ -42,6 +43,7 @@ class TransactionProcessing(DomainEvent):
 
     Consumers: ledger service (reserve funds), real-time balance display.
     """
+
     transaction_id: UUID = field(default_factory=uuid4)
     from_account_id: UUID = field(default_factory=uuid4)
     to_account_id: UUID = field(default_factory=uuid4)
@@ -64,6 +66,7 @@ class TransactionCompleted(DomainEvent):
     Consumers: notification service, ledger settlement, statement generator,
                analytics pipeline, compliance reporting.
     """
+
     transaction_id: UUID = field(default_factory=uuid4)
     from_account_id: UUID = field(default_factory=uuid4)
     to_account_id: UUID = field(default_factory=uuid4)
@@ -92,6 +95,7 @@ class TransactionFailed(DomainEvent):
     Consumers: rollback handler, notification service, audit log,
                fraud detection (failed transfers are signals too).
     """
+
     transaction_id: UUID = field(default_factory=uuid4)
     from_account_id: UUID = field(default_factory=uuid4)
     to_account_id: UUID = field(default_factory=uuid4)
@@ -120,6 +124,7 @@ class TransactionRolledBack(DomainEvent):
     Consumers: ledger service (release reserved funds), notification service,
                Saga orchestrator (compensation step confirmed).
     """
+
     transaction_id: UUID = field(default_factory=uuid4)
     from_account_id: UUID = field(default_factory=uuid4)
     amount: Decimal = field(default=Decimal("0"))
@@ -139,6 +144,7 @@ class DuplicateTransactionDetected(DomainEvent):
 
     Consumers: fraud detection, audit log, observability dashboard.
     """
+
     idempotency_key: str = field(default="")
     original_transaction_id: UUID = field(default_factory=uuid4)
     from_account_id: UUID = field(default_factory=uuid4)

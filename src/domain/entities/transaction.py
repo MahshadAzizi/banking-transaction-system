@@ -58,12 +58,12 @@ class Transaction(AggregateRoot):
 
     @classmethod
     def initiate(
-            cls,
-            from_account_id: AccountId,
-            to_account_id: AccountId,
-            amount: Money,
-            idempotency_key: IdempotencyKey,
-            transaction_type: TransactionType = TransactionType.TRANSFER,
+        cls,
+        from_account_id: AccountId,
+        to_account_id: AccountId,
+        amount: Money,
+        idempotency_key: IdempotencyKey,
+        transaction_type: TransactionType = TransactionType.TRANSFER,
     ) -> Transaction:
         """
         Create and validate a new transfer.
@@ -111,19 +111,19 @@ class Transaction(AggregateRoot):
 
     @classmethod
     def reconstitute(
-            cls,
-            id: TransactionId,
-            from_account_id: AccountId,
-            to_account_id: AccountId,
-            amount: Money,
-            transaction_type: TransactionType,
-            status: TransactionStatus,
-            idempotency_key: IdempotencyKey,
-            created_at: datetime,
-            updated_at: datetime,
-            failure_code: str | None = None,
-            failure_reason: str | None = None,
-            completed_at: datetime | None = None,
+        cls,
+        id: TransactionId,
+        from_account_id: AccountId,
+        to_account_id: AccountId,
+        amount: Money,
+        transaction_type: TransactionType,
+        status: TransactionStatus,
+        idempotency_key: IdempotencyKey,
+        created_at: datetime,
+        updated_at: datetime,
+        failure_code: str | None = None,
+        failure_reason: str | None = None,
+        completed_at: datetime | None = None,
     ) -> Transaction:
         """Rebuild from persistence — no events, no validation."""
         tx = cls(
@@ -220,9 +220,7 @@ class Transaction(AggregateRoot):
         event rather than forcing consumers to infer it from the status history.
         """
         if not self.status.can_fail():
-            raise TransactionNotFailableError(
-                TransactionId(self.id), self.status.value
-            )
+            raise TransactionNotFailableError(TransactionId(self.id), self.status.value)
 
         rollback_required = self.status == TransactionStatus.PROCESSING
         self._rollback_required = rollback_required
@@ -258,9 +256,7 @@ class Transaction(AggregateRoot):
         call happens in the service layer.
         """
         if self.status != TransactionStatus.FAILED:
-            raise TransactionRollbackError(
-                TransactionId(self.id), self.status.value
-            )
+            raise TransactionRollbackError(TransactionId(self.id), self.status.value)
 
         self.updated_at = _now()
 

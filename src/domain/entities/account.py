@@ -30,6 +30,7 @@ def _generate_account_number() -> str:
     In production this would call a sequence or external IBAN generator.
     """
     import random
+
     digits = "".join(str(random.randint(0, 9)) for _ in range(16))
     return f"DE{digits}"
 
@@ -56,10 +57,10 @@ class Account(AggregateRoot):
 
     @classmethod
     def create(
-            cls,
-            owner_id: UUID,
-            currency: Currency,
-            initial_balance: Money | None = None,
+        cls,
+        owner_id: UUID,
+        currency: Currency,
+        initial_balance: Money | None = None,
     ) -> Account:
         """
         Open a new account.
@@ -80,6 +81,7 @@ class Account(AggregateRoot):
 
         if balance.currency != currency:
             from src.domain.exceptions.base import CurrencyMismatchError
+
             raise CurrencyMismatchError(balance.currency, currency)
 
         account = cls(
@@ -102,15 +104,15 @@ class Account(AggregateRoot):
 
     @classmethod
     def reconstitute(
-            cls,
-            id: UUID,
-            owner_id: UUID,
-            account_number: str,
-            balance: Money,
-            currency: Currency,
-            status: AccountStatus,
-            created_at: datetime,
-            updated_at: datetime,
+        cls,
+        id: UUID,
+        owner_id: UUID,
+        account_number: str,
+        balance: Money,
+        currency: Currency,
+        status: AccountStatus,
+        created_at: datetime,
+        updated_at: datetime,
     ) -> Account:
         """Rebuild from persistence — no events emitted."""
         account = cls(
