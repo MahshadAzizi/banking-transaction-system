@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from src.domain.events.base import DomainEvent
 
@@ -14,8 +14,8 @@ class AccountCreated(DomainEvent):
     Never emitted by Account.reconstitute() — that rebuilds from DB silently.
     Consumers: audit log, notification service.
     """
-    account_id: UUID = field(default_factory=UUID)
-    owner_id: UUID = field(default_factory=UUID)
+    account_id: UUID = field(default_factory=uuid4)
+    owner_id: UUID = field(default_factory=uuid4)
     currency: str = field(default="")
     initial_balance: Decimal = field(default=Decimal("0"))
 
@@ -32,8 +32,8 @@ class BalanceDebited(DomainEvent):
 
     Consumers: ledger service, fraud detection, notification, statement generator.
     """
-    account_id: UUID = field(default_factory=UUID)
-    transaction_id: UUID = field(default_factory=UUID)
+    account_id: UUID = field(default_factory=uuid4)
+    transaction_id: UUID = field(default_factory=uuid4)
     amount: Decimal = field(default=Decimal("0"))
     currency: str = field(default="")
     balance_after: Decimal = field(default=Decimal("0"))
@@ -45,8 +45,8 @@ class BalanceCredited(DomainEvent):
     Emitted every time money enters an account via credit().
     Consumers: notification service, ledger service, statement generator.
     """
-    account_id: UUID = field(default_factory=UUID)
-    transaction_id: UUID = field(default_factory=UUID)
+    account_id: UUID = field(default_factory=uuid4)
+    transaction_id: UUID = field(default_factory=uuid4)
     amount: Decimal = field(default=Decimal("0"))
     currency: str = field(default="")
     balance_after: Decimal = field(default=Decimal("0"))
@@ -59,8 +59,8 @@ class AccountFrozen(DomainEvent):
     NOT emitted if already frozen — freeze() is idempotent.
     Consumers: notification service, compliance dashboard, audit log.
     """
-    account_id: UUID = field(default_factory=UUID)
-    owner_id: UUID = field(default_factory=UUID)
+    account_id: UUID = field(default_factory=uuid4)
+    owner_id: UUID = field(default_factory=uuid4)
     reason: str = field(default="")
 
 
@@ -71,8 +71,8 @@ class AccountUnfrozen(DomainEvent):
     NOT emitted if already active — unfreeze() is idempotent.
     Consumers: notification service, audit log.
     """
-    account_id: UUID = field(default_factory=UUID)
-    owner_id: UUID = field(default_factory=UUID)
+    account_id: UUID = field(default_factory=uuid4)
+    owner_id: UUID = field(default_factory=uuid4)
 
 
 @dataclass(frozen=True)
@@ -82,5 +82,5 @@ class AccountClosed(DomainEvent):
     Only reachable after balance reaches zero (enforced by close()).
     Consumers: audit log, data retention service.
     """
-    account_id: UUID = field(default_factory=UUID)
-    owner_id: UUID = field(default_factory=UUID)
+    account_id: UUID = field(default_factory=uuid4)
+    owner_id: UUID = field(default_factory=uuid4)
