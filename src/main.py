@@ -24,7 +24,6 @@ async def lifespan(app: FastAPI):
         version=settings.app_version,
     )
 
-    container: Container = app.state.container
     yield
 
 
@@ -43,7 +42,6 @@ def create_app() -> FastAPI:
             "Architecture: Domain-Driven Design + Hexagonal (Ports & Adapters)\n"
             "Stack: FastAPI · PostgreSQL"
         ),
-
         docs_url="/docs" if not settings.is_production else None,
         redoc_url="/redoc" if not settings.is_production else None,
         openapi_url="/openapi.json" if not settings.is_production else None,

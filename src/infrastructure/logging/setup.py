@@ -15,7 +15,6 @@ def configure_logging(
     """
     log_level = getattr(logging, level.upper(), logging.INFO)
 
-
     shared_processors: list = [
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -24,13 +23,11 @@ def configure_logging(
     ]
 
     if fmt == "json":
-
         processors = shared_processors + [
             structlog.processors.dict_tracebacks,
             structlog.processors.JSONRenderer(),
         ]
     else:
-
         processors = shared_processors + [
             structlog.dev.ConsoleRenderer(),
         ]
@@ -41,7 +38,6 @@ def configure_logging(
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-
 
     logging.basicConfig(
         format="%(message)s",

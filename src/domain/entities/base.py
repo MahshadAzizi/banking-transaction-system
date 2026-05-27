@@ -12,25 +12,19 @@ def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
 
 
-EntityType = TypeVar('EntityType', bound='Entity')
+EntityType = TypeVar("EntityType", bound="Entity")
 
 
 @dataclass
 class Entity:
-    id: UUID = field(
-        default_factory=uuid4,
-        init=False
-    )
+    id: UUID = field(default_factory=uuid4, init=False)
 
     created_at: datetime = field(
         default_factory=_now,
         init=False,
     )
 
-    updated_at: datetime = field(
-        default_factory=_now,
-        init=False
-    )
+    updated_at: datetime = field(default_factory=_now, init=False)
 
     def __eq__(self, other: Entity) -> bool:
         return isinstance(other, Entity) and self.id == other.id
@@ -39,7 +33,7 @@ class Entity:
         return hash(self.id)
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__} id={self.id}>'
+        return f"<{self.__class__.__name__} id={self.id}>"
 
 
 @dataclass
@@ -60,7 +54,9 @@ class AggregateRoot(Entity):
        phantom events for operations that never actually happened.
     """
 
-    _domain_events: list[DomainEvent] = field(default_factory=list, init=False, repr=False)
+    _domain_events: list[DomainEvent] = field(
+        default_factory=list, init=False, repr=False
+    )
 
     def _record_event(self, event: DomainEvent) -> None:
         self._domain_events.append(event)

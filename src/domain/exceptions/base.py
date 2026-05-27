@@ -16,6 +16,4 @@ class DomainException(Exception):
 
 class CurrencyMismatchError(DomainException):
     def __init__(self, left: Currency, right: Currency) -> None:
-        super().__init__(
-            f"Cannot operate on different currencies: {left} vs {right}."
-        )
+        super().__init__(f"Cannot operate on different currencies: {left} vs {right}.")

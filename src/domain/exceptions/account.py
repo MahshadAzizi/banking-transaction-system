@@ -37,10 +37,9 @@ class AccountFrozenError(DomainException):
 
 class AccountClosedError(DomainException):
     def __init__(self, account_id: AccountId) -> None:
-        super().__init__(
-            f"Account '{account_id}' is permanently closed."
-        )
+        super().__init__(f"Account '{account_id}' is permanently closed.")
         self.account_id = account_id
+
 
 class AccountNotEmptyError(DomainException):
     def __init__(self, account_id: AccountId, balance: Money) -> None:

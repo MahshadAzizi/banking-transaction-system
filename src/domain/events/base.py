@@ -45,7 +45,7 @@ class DomainEvent:
 
     def to_dict(self) -> dict:
         data = asdict(self)
-        data['event_type'] = self.event_type
+        data["event_type"] = self.event_type
         for k, v in data.items():
             if isinstance(v, uuid.UUID):
                 data[k] = str(v)
@@ -55,4 +55,4 @@ class DomainEvent:
         return data
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(event_id={self.event_id!r}, occurred_at={self.occurred_at.isoformat()!r})'
+        return f"{self.__class__.__name__}(event_id={self.event_id!r}, occurred_at={self.occurred_at.isoformat()!r})"

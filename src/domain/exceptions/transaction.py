@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING
 from src.domain.exceptions.base import DomainException
 
 if TYPE_CHECKING:
-    from src.domain.value_objects.identifiers import IdempotencyKey, TransactionId, AccountId
+    from src.domain.value_objects.identifiers import (
+        IdempotencyKey,
+        TransactionId,
+        AccountId,
+    )
     from src.domain.value_objects.money import Money
 
 
@@ -20,9 +24,7 @@ class InvalidTransferAmountError(DomainException):
     """
 
     def __init__(self, amount: Money) -> None:
-        super().__init__(
-            f"Transfer amount must be greater than zero. Got: {amount}."
-        )
+        super().__init__(f"Transfer amount must be greater than zero. Got: {amount}.")
         self.amount = amount
 
 
@@ -37,9 +39,7 @@ class SameAccountTransferError(DomainException):
     """
 
     def __init__(self, account_id: AccountId) -> None:
-        super().__init__(
-            f"Cannot transfer to the same account: '{account_id}'."
-        )
+        super().__init__(f"Cannot transfer to the same account: '{account_id}'.")
         self.account_id = account_id
 
 
@@ -117,9 +117,9 @@ class DuplicateIdempotencyKeyError(DomainException):
     """
 
     def __init__(
-            self,
-            idempotency_key: IdempotencyKey,
-            existing_transaction_id: TransactionId,
+        self,
+        idempotency_key: IdempotencyKey,
+        existing_transaction_id: TransactionId,
     ) -> None:
         super().__init__(
             f"Idempotency key '{idempotency_key}' was already used "
