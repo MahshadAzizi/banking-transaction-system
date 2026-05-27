@@ -1,0 +1,15 @@
+#!/bin/bash
+
+BIN_PATH="$(echo "$PATH" | cut -d ':' -f 1)"
+
+PLEASE_CHANGE_DIRECTORY_TO_ROOT='Please cd to project root directory.'
+COMMANDS_APPENDED='Congratulations, Commands are appended.'
+
+pre-commit install
+
+{
+  cp -rf ./scripts/* "$BIN_PATH" 2> /dev/null
+  echo -e "\n\033[32m${COMMANDS_APPENDED}\033[0m\n"
+} || {
+  echo -e "\n\033[31m${PLEASE_CHANGE_DIRECTORY_TO_ROOT}\033[0m\n"
+}
