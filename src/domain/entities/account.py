@@ -37,29 +37,15 @@ def _generate_account_number() -> str:
 @dataclass
 class Account(AggregateRoot):
     """
-    The Account Aggregate Root.
+    Account aggregate root.
 
-    ─── WHY Account is an Aggregate Root ────────────────────────────────
-    Account owns its balance. Nothing outside this class is permitted
-    to change _balance directly. All mutations go through named methods
-    (debit, credit, freeze, close) that enforce business invariants before
-    changing state.
+    Responsible for balance mutations and account state transitions.
 
-    This means it is structurally impossible to:
-    - Overdraw an account without InsufficientFundsError
-    - Debit a frozen account without AccountFrozenError
-    - Close an account that still holds funds
-
-    ─── WHY User must exist before Account.create() ──────────────────────
-    The application service enforces this — it calls UserRepository
-    to confirm the user exists AND is KYC-verified before calling
-    Account.create(). The aggregate itself does not hold a User reference
-    (that would couple two aggregate lifecycles) — it holds only owner_id,
-    a typed UUID reference.
-
-    ─── Account.create() vs Account.reconstitute() ───────────────────────
-    create()        → generates ID, sets initial state, emits AccountCreated
-    reconstitute()  → rebuilds from DB row, emits nothing
+    All balance changes must go through debit() and credit()
+    to enforce domain invariants such as:
+    - no overdraft
+    - no transactions on closed accounts
+    - controlled behavior for frozen accounts
     """
 
     owner_id: UUID = field(default_factory=UUID)

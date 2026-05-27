@@ -11,21 +11,17 @@ from src.domain.value_objects.enums import Currency
 @dataclass(frozen=True)
 class Money:
     """
-    WHY Money is a value object and not Decimal + str:
+    Immutable monetary value object.
 
-    1. Float arithmetic is wrong for banking.
-       0.1 + 0.2 == 0.30000000000000004 in Python floats.
-       Decimal gives exact arithmetic. One rounding rule defined
-       once here (ROUND_HALF_UP), not scattered across services.
+    Encapsulates:
+    - precise decimal arithmetic
+    - currency validation
+    - rounding rules
+    - overdraft protection
 
-    2. Currency mismatch must be caught at the domain level.
-       EUR 100 + USD 100 is not EUR 200. Without Money, every
-       caller must remember to check currencies manually.
-       Money enforces it structurally — you cannot add EUR to USD.
-
-    3. Negative money is meaningless as a balance.
-       Debits are expressed as subtracting a positive Money value.
-       Money(amount=-50) is rejected at construction.
+    Prevents invalid monetary operations such as:
+    - cross-currency arithmetic
+    - negative balances
     """
 
     amount: Decimal
