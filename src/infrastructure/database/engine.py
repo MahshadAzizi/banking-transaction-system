@@ -15,7 +15,6 @@ class Base(DeclarativeBase):
     """
     SQLAlchemy declarative base.
     All ORM models inherit from this.
-    Kept here so alembic env.py has one import point.
     """
 
     pass
