@@ -25,7 +25,7 @@ class IEventBus(Protocol):
         """
         ...
 
-    async def publish_batch(self, events: list[DomainEvent]) -> None:
+    async def publish_many(self, events: list[DomainEvent]) -> None:
         """
         Publish multiple events efficiently.
 
