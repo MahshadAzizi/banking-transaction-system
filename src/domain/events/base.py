@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any
 from datetime import UTC, datetime
@@ -53,6 +54,9 @@ class DomainEvent:
                 data[k] = v.isoformat()
 
         return data
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(event_id={self.event_id!r}, occurred_at={self.occurred_at.isoformat()!r})"
