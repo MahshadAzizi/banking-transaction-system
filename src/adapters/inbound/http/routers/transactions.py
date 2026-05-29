@@ -14,6 +14,8 @@ from src.adapters.inbound.http.schemas.transaction import (
 )
 from src.application.dtos.transaction import TransferCommand
 from src.application.ports.inbound.transfer_service import ITransferService
+from src.application.ports.inbound.account_service import IAccountService
+
 from src.infrastructure.containers.container import container
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -70,7 +72,6 @@ async def initiate_transfer(
 )
 async def get_transaction(
     transaction_id: UUID,
-    current_user: AuthenticatedUser = Depends(get_current_user),
     service: ITransferService = Depends(get_transfer_service),
 ) -> TransactionResponse:
     """GET /transactions/{id} — authenticated users can view their transactions."""
@@ -80,21 +81,18 @@ async def get_transaction(
 async def _get_account_or_403(
     account_id: UUID,
     current_user: AuthenticatedUser,
-    service: ITransferService,
 ) -> None:
     """
     Verify the current user owns this account before allowing a transfer.
     Raises 403 if they don't — before any domain logic runs.
     """
-    from src.application.ports.inbound.account_service import IAccountService
-    from src.infrastructure.containers.container import container
 
     account_service: IAccountService = container.account_service()
 
     try:
         dto = await account_service.get(account_id)
     except Exception:
-        return  # ResourceNotFoundError will be raised by the service
+        return
 
     if not current_user.can_access_account(dto.owner_id):
         raise HTTPException(

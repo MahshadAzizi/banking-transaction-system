@@ -38,8 +38,18 @@ class PostgresAccountRepository(IAccountRepository):
         return account
 
     async def save(self, account: Account) -> None:
-        orm = AccountMapper.to_orm(account)
-        await self._session.merge(orm)
+        orm = await self._session.get(AccountORM, account.id)
+        if orm is None:
+            orm = AccountMapper.to_new_orm(account)
+            self._session.add(orm)
+        else:
+            AccountMapper.update_orm(orm, account)
+
+    async def update(self, account: Account) -> None:
+        stmt = select(AccountORM).where(AccountORM.id == account.id).with_for_update()
+        result = await self._session.execute(stmt)
+        orm = result.scalar_one()
+        AccountMapper.update_orm(orm, account)
 
     async def exists(self, account_id: AccountId) -> bool:
         stmt = select(AccountORM.id).where(AccountORM.id == account_id)

@@ -37,6 +37,8 @@ class IAccountRepository(Protocol):
         """
         ...
 
+    async def update(self, account: Account) -> None: ...
+
     async def exists(self, account_id: AccountId) -> bool:
         """
         Check existence without loading the full aggregate.

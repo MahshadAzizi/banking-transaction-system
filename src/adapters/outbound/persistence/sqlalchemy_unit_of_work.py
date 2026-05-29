@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from types import TracebackType
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -51,12 +50,12 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         await self._session.close()
 
     async def commit(self) -> None:
-        """
-        Collect domain events from all touched aggregates,
-        then commit everything atomically in one DB transaction.
-        """
-        await self._collect_and_store_events()
-        await self._session.commit()
+        try:
+            await self._collect_and_store_events()
+            await self._session.commit()
+        except Exception:
+            await self._session.rollback()
+            raise
 
     async def rollback(self) -> None:
         await self._session.rollback()
@@ -70,16 +69,13 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         If the commit succeeds: both business data and outbox events land.
         If the commit fails: neither lands — no phantom events.
         """
-        all_aggregates = [
-            *self.accounts.seen,
-            *self.transactions.seen,
-        ]
-
-        for aggregate in all_aggregates:
+        for aggregate in [*self.accounts.seen, *self.transactions.seen]:
             for event in aggregate.collect_events():
-                outbox_row = OutboxMessageORM(
-                    event_type=type(event).__name__,
-                    payload=json.dumps(event.to_dict()),
-                    aggregate_id=str(event.event_id),
+                self._session.add(
+                    OutboxMessageORM(
+                        event_type=event.event_type,
+                        payload=event.to_json(),
+                        aggregate_id=str(event.event_id),
+                        aggregate_type=event.event_type,
+                    )
                 )
-                self._session.add(outbox_row)

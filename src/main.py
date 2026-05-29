@@ -1,54 +1,72 @@
+from __future__ import annotations
+
+import asyncio
 from contextlib import asynccontextmanager
 
-import structlog
 from fastapi import FastAPI
 
-from src.infrastructure.config.settings import get_settings
-from src.infrastructure.containers.container import Container
-from src.infrastructure.logging.setup import configure_logging
+from src.adapters.inbound.http.exception_handlers import register_exception_handlers
+from src.adapters.inbound.http.middleware.request_id import RequestIdMiddleware
+from src.adapters.inbound.http.routers import accounts, health, transactions, auth
 
+from src.infrastructure.config.settings import get_settings
+from src.infrastructure.containers.container import container
+from src.infrastructure.logging.setup import setup_logging
+from src.infrastructure.logging.setup import get_logger
+
+logger = get_logger(__name__)
 settings = get_settings()
+
+
+def _wire_container() -> None:
+    """
+    Central DI wiring — must run BEFORE app starts serving requests.
+    """
+    container.config.from_dict(settings.model_dump())
+
+    container.wire(
+        modules=[
+            "src.adapters.inbound.http.routers.accounts",
+            "src.adapters.inbound.http.routers.transactions",
+            "src.adapters.inbound.http.routers.auth",
+        ]
+    )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    configure_logging(
-        level=settings.observability.log_level,
-        fmt=settings.observability.log_format,
+    # 1. logging first
+    setup_logging(
+        log_level=settings.observability.log_level,
+        json_logs=settings.observability.log_format == "json",
     )
-    logger = structlog.get_logger(__name__)
 
-    logger.info(
-        "application_starting",
-        env=settings.app_env,
-        version=settings.app_version,
-    )
+    _wire_container()
+
+    logger.info("application_started", version="0.1.0")
 
     yield
 
+    logger.info("application_shutting_down")
 
-def _wire_container(app: FastAPI) -> None:
-    container = Container()
-
-    app.state.container = container
+    result = container.shutdown_resources()
+    if asyncio.iscoroutine(result):
+        await result
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title=settings.app_name,
-        version=settings.app_version,
-        description=(
-            "Banking Transaction Processing System\n\n"
-            "Architecture: Domain-Driven Design + Hexagonal (Ports & Adapters)\n"
-            "Stack: FastAPI · PostgreSQL"
-        ),
-        docs_url="/docs" if not settings.is_production else None,
-        redoc_url="/redoc" if not settings.is_production else None,
-        openapi_url="/openapi.json" if not settings.is_production else None,
+        title="Banking Transaction System",
+        description="DDD + Hexagonal Architecture",
+        version="0.1.0",
         lifespan=lifespan,
     )
-    _wire_container(app)
-
+    app.add_middleware(RequestIdMiddleware)
+    app.include_router(health.router)
+    app.include_router(auth.router)
+    app.include_router(accounts.router)
+    app.include_router(transactions.router)
+    register_exception_handlers(app)
     return app
 
 

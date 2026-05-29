@@ -36,5 +36,12 @@ class PostgresTransactionRepository(ITransactionRepository):
         return TransactionMapper.to_domain(orm)
 
     async def save(self, transaction: Transaction) -> None:
-        orm = TransactionMapper.to_orm(transaction)
-        await self._session.merge(orm)
+        orm = await self._session.get(TransactionORM, transaction.id)
+        if orm is None:
+            self._session.add(TransactionMapper.to_new_orm(transaction))
+        else:
+            TransactionMapper.update_orm(orm, transaction)
+
+    async def update(self, transaction: Transaction) -> None:
+        orm = await self._session.get(TransactionORM, transaction.id)
+        TransactionMapper.update_orm(orm, transaction)
