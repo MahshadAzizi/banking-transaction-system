@@ -595,7 +595,7 @@ Benefits:
 ## Using Docker
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 ---
@@ -611,7 +611,7 @@ uv sync
 ### Run Application
 
 ```bash
-uv run uvicorn src.main:app --reload
+uv run uvicorn src.main:app --host 0.0.0.0 --port 800 --reload
 ```
 
 ---
