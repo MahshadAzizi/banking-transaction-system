@@ -6,13 +6,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="POSTGRES_", extra="ignore")
-
+    model_config = SettingsConfigDict(
+        env_prefix="POSTGRES_", extra="ignore", env_file=".env"
+    )
     host: str = "localhost"
     port: int = 5432
     db: str = "banking_db"
     user: str = "banking_user"
     password: str = "banking_pass"
+    pool_size: int = 10
+    max_overflow: int = 20
 
     @property
     def url(self) -> str:
@@ -20,6 +23,26 @@ class DatabaseSettings(BaseSettings):
             f"postgresql+asyncpg://{self.user}:{self.password}"
             f"@{self.host}:{self.port}/{self.db}"
         )
+
+
+class RedisSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="REDIS_", extra="ignore")
+
+    host: str = "localhost"
+    port: int = 6379
+    db: int = 0
+    lock_ttl_seconds: int = 30
+
+    @property
+    def url(self) -> str:
+        return f"redis://{self.host}:{self.port}/{self.db}"
+
+
+class SecuritySettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="SECURITY_", extra="ignore")
+
+    jwt_secret: str = "dev-secret-change-in-production"
+    jwt_algorithm: str = "HS256"
 
 
 class ObservabilitySettings(BaseSettings):
@@ -42,9 +65,11 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     app_host: str = "0.0.0.0"
     app_port: int = 8000
-    debug: bool = True
+    debug: bool = False  # safe default
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
+    security: SecuritySettings = Field(default_factory=SecuritySettings)
     observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
 
     @property
