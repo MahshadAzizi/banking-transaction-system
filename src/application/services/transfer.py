@@ -7,7 +7,6 @@ from src.application.dtos.transaction import TransferCommand, TransactionDTO
 from src.application.ports.inbound.transfer_service import ITransferService
 from src.application.ports.outbound.event_bus import IEventBus
 from src.application.ports.outbound.lock_manager import ILockManager
-from src.application.ports.outbound.transaction_repository import ITransactionRepository
 from src.application.ports.outbound.unit_of_work import IUnitOfWork
 from src.domain.entities.transaction import Transaction
 from src.domain.exceptions.base import ResourceNotFoundError
@@ -18,6 +17,9 @@ from src.domain.value_objects.identifiers import (
     TransactionId,
 )
 from src.domain.value_objects.money import Money
+from src.infrastructure.logging.setup import get_logger
+
+logger = get_logger(__name__)
 
 
 class TransferService(ITransferService):
@@ -48,19 +50,23 @@ class TransferService(ITransferService):
         uow: IUnitOfWork,
         lock_manager: ILockManager,
         event_bus: IEventBus,
-        transaction_repo: ITransactionRepository,
     ) -> None:
         self._uow = uow
         self._lock = lock_manager
         self._bus = event_bus
-        self._tx_repo = transaction_repo
 
     async def initiate(self, command: TransferCommand) -> TransactionDTO:
         idempotency_key = IdempotencyKey(command.idempotency_key)
 
-        # ── Step 1: idempotency fast path ─────────────────────────────────
-        existing = await self._tx_repo.get_by_idempotency_key(idempotency_key)
+        # ── Step 1: idempotency check via UoW ─────────────────────────────
+        async with self._uow as uow:
+            existing = await uow.transactions.get_by_idempotency_key(idempotency_key)
         if existing is not None:
+            logger.info(
+                "transfer_duplicate_detected",
+                idempotency_key=command.idempotency_key,
+                existing_transaction_id=str(existing.id),
+            )
             return TransactionDTO.from_aggregate(existing)
 
         # ── Step 2: build domain value objects ────────────────────────────
@@ -71,7 +77,9 @@ class TransferService(ITransferService):
 
         # ── Step 3: distributed lock ──────────────────────────────────────
         lock_keys = sorted([str(from_id), str(to_id)])
+        logger.debug("acquiring_distributed_lock", keys=lock_keys)
         async with self._lock.acquire(*lock_keys):
+            logger.debug("lock_acquired", keys=lock_keys)
             # ── Step 4: open DB transaction ───────────────────────────────
             async with self._uow as uow:
                 # ── Step 5: load accounts with row-level DB lock ──────────
@@ -98,6 +106,15 @@ class TransferService(ITransferService):
                     tx.complete()
 
                 except Exception as exc:
+                    logger.warning(
+                        "transfer_failed",
+                        transaction_id=str(tx.id),
+                        failure_code=type(exc).__name__,
+                        failure_reason=str(exc),
+                        from_account=str(from_id),
+                        to_account=str(to_id),
+                        amount=str(amount.amount),
+                    )
                     failure_code = type(exc).__name__.upper().replace("ERROR", "")
                     tx.fail(
                         failure_code=failure_code,
@@ -109,8 +126,8 @@ class TransferService(ITransferService):
                     raise
 
                 # ── Step 8: persist all changes ───────────────────────────
-                await uow.accounts.save(sender)
-                await uow.accounts.save(receiver)
+                await uow.accounts.update(sender)
+                await uow.accounts.update(receiver)
                 await uow.transactions.save(tx)
 
                 # ── Step 9: atomic COMMIT ─────────────────────────────────
@@ -125,10 +142,20 @@ class TransferService(ITransferService):
         if events:
             await self._bus.publish_many(events)
 
+        logger.info(
+            "transfer_completed",
+            transaction_id=str(tx.id),
+            from_account=str(from_id),
+            to_account=str(to_id),
+            amount=str(amount.amount),
+            currency=command.currency,
+        )
+
         return TransactionDTO.from_aggregate(tx)
 
     async def get(self, transaction_id: UUID) -> TransactionDTO:
-        tx = await self._tx_repo.get(TransactionId(transaction_id))
-        if tx is None:
-            raise ResourceNotFoundError("Transaction", transaction_id)
-        return TransactionDTO.from_aggregate(tx)
+        async with self._uow as uow:
+            tx = await uow.transactions.get(TransactionId(transaction_id))
+            if tx is None:
+                raise ResourceNotFoundError("Transaction", transaction_id)
+            return TransactionDTO.from_aggregate(tx)
