@@ -4,17 +4,19 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: banking-app
+    command: ./scripts/run.sh
     env_file:
       - .env
     ports:
       - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ./src:/app/src
+      - ./scripts:/app/scripts:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./src:/app/src:ro
 
   postgres:
     image: postgres:16-alpine
@@ -26,7 +28,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-banking_user} -d ${POSTGRES_DB:-banking_db}" ]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-banking_user} -d ${POSTGRES_DB:-banking_db}"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,13 +46,26 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: banking-migration
+    command: ./scripts/migrate.sh
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   postgres_data:
-    driver: local
   redis_data:
-    driver: local
