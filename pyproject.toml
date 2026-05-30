@@ -1,66 +1,138 @@
 [project]
 name = "banking-transaction-system"
 version = "0.1.0"
-description = "Banking Transaction Processing System built with DDD and Hexagonal Architecture"
+description = "Banking Transaction Processing System — DDD + Hexagonal Architecture"
 readme = "README.md"
 requires-python = ">=3.11"
-
 authors = [
     { name = "Mahshad Azizi", email = "Azizi.mhshd@gmail.com" }
 ]
 
 dependencies = [
-    # API
-    "fastapi==0.121.0",
-    "uvicorn[standard]==0.38.0",
+    # ── Web framework ──────────────────────────────────────────────────────────
+    "fastapi>=0.111.0,<0.112.0",
+    "uvicorn[standard]>=0.30.0,<0.31.0",
 
-    # Validation & configuration
-    "pydantic==2.12.4",
-    "pydantic-settings==2.11.0",
+    # ── Validation & configuration ─────────────────────────────────────────────
+    "pydantic>=2.7.0,<3.0.0",
+    "pydantic-settings>=2.2.0,<3.0.0",
 
-    # Database
-    "SQLAlchemy==2.0.44",
-    "asyncpg==0.30.0",
-    "alembic==1.17.1",
-    "greenlet==3.4.0",
-    "Mako==1.3.10",
+    # ── Database ───────────────────────────────────────────────────────────────
+    "sqlalchemy[asyncio]>=2.0.30,<3.0.0",
+    "asyncpg>=0.29.0,<1.0.0",
+    "alembic>=1.13.0,<2.0.0",
 
-    # Cache / messaging
-    "redis==8.0.0",
+    # ── Cache & distributed locking ────────────────────────────────────────────
+    "redis>=5.0.0,<6.0.0",
 
-    # Dependency injection
-    "dependency-injector==4.48.2",
+    # ── Dependency injection ───────────────────────────────────────────────────
+    "dependency-injector>=4.41.0,<5.0.0",
 
-    # Structured logging
-    "structlog==24.1.0",
+    # ── Structured logging ─────────────────────────────────────────────────────
+    "structlog>=24.1.0,<25.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    # Linting & formatting
-    "ruff==0.14.4",
-    "pre-commit==4.4.0",
+    # ── Linting & formatting ───────────────────────────────────────────────────
+    # ruff replaces: flake8, isort, pyupgrade, and partially black
+    "ruff>=0.4.0,<1.0.0",
 
-    # Testing
-    "pytest==8.4.0",
-    "pytest-asyncio==1.1.0",
-    "pytest-tornasync==0.6.0.post2",
-    "pytest-trio==0.8.0",
-    "pytest-twisted==1.14.3",
-    "anyio==4.10.0",
+    # ── Type checking ──────────────────────────────────────────────────────────
+    "mypy>=1.10.0,<2.0.0",
+
+    # ── Pre-commit hooks ───────────────────────────────────────────────────────
+    "pre-commit>=3.7.0,<4.0.0",
+
+    # ── Testing ────────────────────────────────────────────────────────────────
+    "pytest>=8.2.0,<9.0.0",
+
+    # pytest-asyncio
+    "pytest-asyncio>=0.23.0,<1.0.0",
+
+    # Coverage reporting — required for submission quality
+    "pytest-cov>=5.0.0,<6.0.0",
+
+    # httpx: async HTTP client for FastAPI integration tests
+    "httpx>=0.27.0,<1.0.0",
+
+    # anyio: async test utilities — sleep, timeouts, task groups in tests
+    "anyio>=4.3.0,<5.0.0",
+
+    # Type stubs for untyped third-party libraries
+    "types-redis>=4.6.0",
 ]
 
+# ── Ruff (linter + formatter) ──────────────────────────────────────────────────
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear — catches real bugs (mutable default args, etc.)
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking — moves TYPE_CHECKING-only imports correctly
+]
+ignore = [
+    "E501",  # line length — ruff formatter handles this
+    "B008",  # do not perform function calls in default args (conflicts with FastAPI Depends)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use assert statements and magic values freely
+"tests/*" = ["S101", "PLR2004"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+# ── Mypy (type checker) ────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+# Exclude migrations — auto-generated, not worth type-checking
+exclude = ["alembic/versions/"]
+
+# ── Pytest ─────────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-
-[build-system]
-requires = [
-    "setuptools==80.9.0",
-    "wheel==0.45.1",
+addopts = [
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-fail-under=60",   # minimum coverage gate — raise as project matures
+    "-v",
 ]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/migrations/*",
+    "alembic/*",
+    "*/tests/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+    "def __repr__",
+]
+
+# ── Build system ───────────────────────────────────────────────────────────────
+[build-system]
+requires = ["setuptools>=80.0.0", "wheel>=0.45.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
